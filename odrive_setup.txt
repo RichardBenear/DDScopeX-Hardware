@@ -1,0 +1,170 @@
+# Start the ODrive Tool
+odrivetool shell
+
+# If necessary, Wipe the configuration
+odrv0.erase_configuration()
+
+# TOP LEVEL CONFIGURATION
+# Set up some basic parameters
+odrv0.config.enable_brake_resistor=True
+odrv0.config.brake_resistance = 1.0
+odrv0.config.gpio5_mode=0
+
+###########################################
+## AXIS 0 SETUP - Altitude Motor
+###########################################
+odrv0.axis0.motor.config.motor_type=0 #Hi Current
+odrv0.axis0.motor.config.pre_calibrated=False
+odrv0.axis0.motor.config.calibration_current = 5
+odrv0.axis0.motor.config.pole_pairs = 10 #for double motor
+odrv0.axis0.motor.config.current_lim = 60
+odrv0.axis0.motor.config.torque_constant = 0.002
+odrv0.axis0.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT
+odrv0.axis0.motor.config.resistance_calib_max_voltage = 13.0
+odrv0.axis0.motor.config.current_control_bandwidth = 10
+
+odrv0.axis0.encoder.config.pre_calibrated=False
+odrv0.axis0.encoder.config.cpr = 16384	
+odrv0.axis0.encoder.config.use_index = False
+odrv0.axis0.encoder.config.mode=256 #absolute CUI
+odrv0.axis0.encoder.config.abs_spi_cs_gpio_pin=6
+odrv0.axis0.encoder.config.bandwidth=800
+
+odrv0.axis0.controller.config.vel_limit = 1.0
+odrv0.axis0.controller.config.vel_limit_tolerance=1.4
+
+odrv0.axis0.controller.config.vel_gain=0.3 #[Nm/(turn/s)]
+odrv0.axis0.controller.config.vel_integrator_gain=.4 #[Nm/((turn/s) * s)]
+odrv0.axis0.controller.config.pos_gain=1.0 #[(turn/s) / turn]
+
+odrv0.axis0.controller.config.control_mode=3 #position control
+odrv0.axis0.controller.config.input_mode=5 #trap traj
+odrv0.axis0.controller.config.homing_speed=.25
+
+odrv0.axis0.controller.config.torque_ramp_rate=.1
+odrv0.axis0.controller.config.vel_ramp_rate=0.05
+odrv0.axis0.controller.config.inertia=0.05
+odrv0.axis0.controller.config.input_filter_bandwidth=10.0
+
+odrv0.axis0.trap_traj.config.vel_limit=.02
+odrv0.axis0.trap_traj.config.accel_limit=.01
+odrv0.axis0.trap_traj.config.decel_limit=.01
+
+#Save the config
+odrv0.save_configuration()
+odrv0.reboot()
+
+######### Calibration ##########
+# Only needs performed once since there is an absolute encoder.
+# Run the calibration. Motor should have little or no load (resistance to rotation).
+odrv0.axis0.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+
+odrv0.axis0.encoder.config.pre_calibrated = True
+odrv0.axis0.motor.config.pre_calibrated = True
+
+# At this point you can test with the following commands to see how the motor performs,
+# Motor may jerk or oscillate until some load is applied. Reduce the gains temporarily if
+#	you want to experiment in the unloaded state.
+odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+
+# Save the config and 
+odrv0.save_configuration()
+odrv0.reboot()
+
+# Handy Tuning plotter for Axis0
+start_liveplotter(lambda:[odrv0.axis0.encoder.pos_estimate, odrv0.axis0.controller.pos_setpoint])
+
+
+
+##########################################
+# Startup procedure from now on
+##########################################
+
+odrv0.axis0.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
+odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+
+# try a small move
+# IMPORTANT!!: never move Altitude motor more than +0.5 turn!! with OTA attached
+# NEVER try negative values with OTA attached!! Damage to OTA will occur.
+
+# Example of a 72 deg move. (0.2 turn * 360 deg/turn)
+odrv0.axis0.controller.input_pos = 0.2 #turn
+
+###########################################
+## AXIS 1 SETUP Azimuth Motor
+###########################################
+odrv0.axis1.motor.config.motor_type=0 #Hi Current
+odrv0.axis1.motor.config.pre_calibrated=False
+odrv0.axis1.motor.config.calibration_current = 5
+odrv0.axis1.motor.config.pole_pairs = 10
+odrv0.axis1.motor.config.current_lim = 60
+odrv0.axis1.motor.config.torque_constant = .002
+odrv0.axis1.motor.config.motor_type = MOTOR_TYPE_HIGH_CURRENT
+odrv0.axis1.motor.config.resistance_calib_max_voltage = 10.0
+odrv0.axis1.motor.config.current_control_bandwidth = 10
+
+odrv0.axis1.encoder.config.pre_calibrated=False
+odrv0.axis1.encoder.config.cpr = 16384	
+odrv0.axis1.encoder.config.use_index = False
+odrv0.axis1.encoder.config.mode=256 #absolute CUI
+odrv0.axis1.encoder.config.abs_spi_cs_gpio_pin=8
+odrv0.axis1.encoder.config.bandwidth=500
+
+odrv0.axis1.controller.config.vel_limit = 0.15
+odrv0.axis1.controller.config.vel_gain=1.5 #[Nm/(turn/s)]
+odrv0.axis1.controller.config.vel_integrator_gain=2.0 #[Nm/((turn/s) * s)]
+odrv0.axis1.controller.config.pos_gain=3 #[(turn/s) / turn]
+
+odrv0.axis1.controller.config.control_mode=3 #position control
+odrv0.axis1.controller.config.input_mode=5 #trap traj
+
+odrv0.axis1.controller.config.torque_ramp_rate=.3
+odrv0.axis1.controller.config.vel_ramp_rate=.05
+odrv0.axis1.controller.config.inertia=.2 
+
+odrv0.axis1.trap_traj.config.vel_limit=.02
+odrv0.axis1.trap_traj.config.accel_limit=.01
+odrv0.axis1.trap_traj.config.decel_limit=.01
+
+# Save the config
+odrv0.save_configuration()
+odrv0.reboot()
+
+######### Calibration ##########
+# Only needs performed once since there is an absolute encoder.
+# Motor should have little or no load (resistance to rotation).
+# Run the calibration. 
+odrv0.axis1.requested_state = AXIS_STATE_FULL_CALIBRATION_SEQUENCE
+
+odrv0.axis1.encoder.config.pre_calibrated = True
+odrv0.axis1.motor.config.pre_calibrated = True
+
+# At this point you can test with the following commands to see how the motor performs,
+# Motor may jerk or oscillate until some load is applied. Reduce the gains temporarily if
+#	you want to experiment in the unloaded state.
+odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+
+# Save the config and reboot
+odrv0.save_configuration()
+odrv0.reboot()
+
+# tuning plotter for Axis1 (Azimuth)
+start_liveplotter(lambda:[odrv0.axis1.encoder.pos_estimate, odrv0.axis1.controller.pos_setpoint])
+
+
+
+##########################################
+# Startup procedure from now on
+##########################################
+
+# Put the controller in position mode
+odrv0.axis1.controller.config.control_mode = CONTROL_MODE_POSITION_CONTROL
+odrv0.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+
+IMPORTANT!! Never move Azimuth axis more than + or - 0.5 turn with
+forks attached to base because cables may not be long enough!!
+
+# try a small move
+odrv0.axis1.controller.input_pos = 0.2 #turn
+
+#####################################################
