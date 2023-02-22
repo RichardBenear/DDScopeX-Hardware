@@ -27,7 +27,7 @@ odrv0.axis0.encoder.config.pre_calibrated=False
 odrv0.axis0.encoder.config.cpr = 16384	
 odrv0.axis0.encoder.config.use_index = False
 odrv0.axis0.encoder.config.mode=256 #absolute CUI
-odrv0.axis0.encoder.config.abs_spi_cs_gpio_pin=6
+odrv0.axis0.encoder.config.abs_spi_cs_gpio_pin=7
 odrv0.axis0.encoder.config.bandwidth=800
 
 odrv0.axis0.controller.config.vel_limit = 1.0
