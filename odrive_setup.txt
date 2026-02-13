@@ -1,5 +1,5 @@
-ODrive Configuration Settings
-
+Appendix A – ODrive Motor Configuration
+Download the ODrive Tool before starting.
 # Start the ODrive Tool in a terminal window
 C:>odrivetool
 
@@ -46,7 +46,6 @@ odrv0.axis0.controller.config.torque_ramp_rate=.1
 odrv0.axis0.controller.config.vel_ramp_rate=0.05
 odrv0.axis0.controller.config.inertia=0.05
 odrv0.axis0.controller.config.input_filter_bandwidth=10.0
-
 # Trapezoidal Trajectory settings
 odrv0.axis0.trap_traj.config.vel_limit=.02
 odrv0.axis0.trap_traj.config.accel_limit=.01
@@ -73,14 +72,38 @@ odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 odrv0.axis0.controller.input_pos = .1
 # this should turn the motor 0.1 of a turn or 36 deg
 
-# Save the config and 
-odrv0.save_configuration()
-odrv0.reboot()
+# Optional: Run Anticogging
+The anticogging feature helps eliminate the "bumpy" feeling of BLDC motors at low speeds by building a torque compensation map. The motor should have no load attached to the shaft.
 
-# Handy Tuning plotter for Axis0
-start_liveplotter(lambda:[odrv0.axis0.encoder.pos_estimate, odrv0.axis0.controller.pos_setpoint])
+You need to set the calibration parameters. These values define how fast the motor spins during the mapping process and how much torque it can apply to "fight" the cogging.
 
+# Set the maximum torque the anticogging algorithm is allowed to apply
+odrv0.axis0.config.anticogging.max_torque = 0.1  # Start low, e.g., 0.1 Nm
 
+# Set the calibration velocities (turns/sec)
+odrv0.axis0.config.anticogging.calib_start_vel = 1.0
+odrv0.axis0.config.anticogging.calib_end_vel = 0.1
+
+# Set the integrator gain for the calibration (helps follow the map accurately)
+odrv0.axis0.config.anticogging.calib_coarse_integrator_gain = 10.0
+
+Running the Calibration
+The calibration process will rotate the motor back and forth to map the cogging torque across a full
+revolution.
+1.	Enter Closed Loop: Ensure the motor is powered and holding position. 
+odrv0.axis0.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
+2.	Start Calibration: 
+odrv0.axis0.requested_state = AXIS_STATE_ANTICOGGING_CALIBRATION
+3.	Wait: The motor will begin a slow, multi-phase rotation. This typically takes 6–10 minutes. Do not disturb the motor during this time.
+4.	Verify: Once the motor stops moving and returns to IDLE or stays in CLOSED_LOOP, check if the map is valid: 
+odrv0.axis0.controller.anticogging_valid (Should return True)
+
+Enabling and Saving
+If the calibration was successful, you can now activate the live compensation.
+•	Enable: 
+odrv0.axis0.config.anticogging.enabled = True
+•	Persistent Save: To keep this map after a reboot, you must save the configuration: odrv0.save_configuration()
+________________________________________
 ###########################################
 ## AXIS 1 SETUP Azimuth Motor
 ###########################################
@@ -119,7 +142,6 @@ odrv0.axis1.trap_traj.config.vel_limit=.02
 odrv0.axis1.trap_traj.config.accel_limit=.01
 odrv0.axis1.trap_traj.config.decel_limit=.01
 
-
 ######### Calibration ##########
 # Only needs performed once since there is an absolute encoder.
 # Run the calibration. Motor should have little or no load (resistance to rotation).
@@ -148,9 +170,10 @@ odrv0.reboot()
 #	you want to experiment in the unloaded state.
 odrv1.axis1.requested_state = AXIS_STATE_CLOSED_LOOP_CONTROL
 
-# tuning plotter for Axis1 (Azimuth)
-start_liveplotter(lambda:[odrv0.axis1.encoder.pos_estimate, odrv0.axis1.controller.pos_setpoint])
+# Run anticogging the same as axis0 but on axis1
+odrv0.save_configuration()
 
+________________________________________
 ##########################################
 # Startup procedure from now on
 ##########################################
@@ -163,5 +186,3 @@ forks and OTA attached to base because cables may not be long enough!!
 
 # try a small move (0.2 of a turn)
 odrv0.axis1.controller.input_pos = 0.2
-
-#####################################################
